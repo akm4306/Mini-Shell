@@ -1,47 +1,40 @@
-use std::io::{self, Write};
 mod cat;
 mod echo;
 mod execute;
 mod navigate;
 mod parser;
 mod type_;
-pub fn repl() -> bool {
-    print!("$ ");
-    io::stdout().flush().unwrap();
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
-    input = input.trim().to_string();
+
+use crate::completer::ShellCompleter;
+use rustyline::Editor;
+
+pub fn repl(
+    rl: &mut Editor<ShellCompleter, rustyline::history::DefaultHistory>,
+) -> rustyline::Result<()> {
+    let input = rl.readline("$ ")?;
+    rl.add_history_entry(&input)?;
+
     let parsed_args = parser::parse_args(input.clone());
     let cmd = &parsed_args[0];
     if cmd == "exit" {
-        return false;
-    }
-    if cmd == "echo" {
-        echo::echo(input);
-        return true;
-    }
-    if cmd == "type" {
+        return Err(rustyline::error::ReadlineError::Interrupted);
+    } else if cmd == "echo" {
+        echo::echo(input.clone());
+    } else if cmd == "type" {
         let args: Vec<&str> = parsed_args.iter().map(|s| s.as_str()).collect();
         type_::type_(args);
-        return true;
-    }
-    if cmd == "pwd" {
+    } else if cmd == "pwd" {
         let wd = navigate::pwd();
         println!("{}", wd);
-        return true;
-    }
-    if cmd == "cd" {
+    } else if cmd == "cd" {
         let args: Vec<&str> = parsed_args.iter().map(|s| s.as_str()).collect();
         navigate::cd(args);
-        return true;
-    }
-    if cmd == "cat" {
-        cat::cat(input);
-        return true;
+    } else if cmd == "cat" {
+        cat::cat(input.clone());
     } else if type_::is_executable(cmd).is_some() {
-        execute::execute(input);
+        execute::execute(input.clone());
     } else {
         println!("{}: command not found", cmd);
     }
-    return true;
+    Ok(())
 }

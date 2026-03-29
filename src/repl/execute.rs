@@ -3,7 +3,7 @@ use std::process::{Command, Stdio};
 use std::fs::OpenOptions;
 
 use super::parser;
-use super::type_::is_executable;
+
 
 pub fn execute(input: String) {
     let args = parser::parse_args(input);
